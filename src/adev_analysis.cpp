@@ -33,11 +33,11 @@ void adev(const std::vector<double> &data, const size_t n, std::pair<double, dou
     for (size_t j = 1; j < M; ++j) {
         nws = 0.0;
         for (size_t i = 0; i < n; ++i) {
-            nws += data[j*n + i];
+            nws += data[j * n + i];
         }
         d = (nws - ws) / n;
         ws = nws;
-        dev += d*d;
+        dev += d * d;
     }
     dev /= 2 * (M - 1);
     dev = sqrt(dev);
@@ -65,7 +65,7 @@ void process_data(const std::vector<double> &data, double freq, const std::strin
 
     std::vector<std::array<double, 3>> adev_data_vector;
     for (auto &p : adev_data) {
-        adev_data_vector.push_back({ p.first / freq, p.second.first, p.second.second });
+        adev_data_vector.push_back({p.first / freq, p.second.first, p.second.second});
     }
 
     AdevNoiseModel model;
@@ -76,9 +76,9 @@ void process_data(const std::vector<double> &data, double freq, const std::strin
     double crw = pow(10, model.m_noise);
     double cws = pow(10, rwmodel.m_noise);
     printf("continuous white noise density: %.7e\n", crw);
-    printf("  discrete white noise density: %.7e\n", crw*sqrt(freq));
-    printf("continuous random walk density: %.7e\n", cws*sqrt(3));
-    printf("  discrete random walk density: %.7e\n", cws*sqrt(3) / sqrt(freq));
+    printf("  discrete white noise density: %.7e\n", crw * sqrt(freq));
+    printf("continuous random walk density: %.7e\n", cws * sqrt(3));
+    printf("  discrete random walk density: %.7e\n", cws * sqrt(3) / sqrt(freq));
 
     gnuplot plot;
     plot.open();
@@ -98,9 +98,7 @@ void process_data(const std::vector<double> &data, double freq, const std::strin
     plot.command("set logscale xy");
     plot.command("f(x) = a/sqrt(x)+b*sqrt(x)");
     // plot.command("fit f(x) $DATA using 1:2 via a,b");
-    plot.command("plot $DATA using 1:2:3 with errorbars title 'ADEV', " + \
-    std::to_string(crw) + " / sqrt(x) title 'White Noise', " + \
-    std::to_string(cws) + "*sqrt(x) title 'Random Walk'");
+    plot.command("plot $DATA using 1:2:3 with errorbars title 'ADEV', " + std::to_string(crw) + " / sqrt(x) title 'White Noise', " + std::to_string(cws) + "*sqrt(x) title 'Random Walk'");
     // plot.command("replot a / sqrt(x) title 'WN Fit'");
     // plot.command("replot b*sqrt(x) title 'RW Fit'");
     // plot.command("replot " + std::to_string(crw) + " / sqrt(x) title 'White Noise'");
@@ -111,7 +109,7 @@ void process_data(const std::vector<double> &data, double freq, const std::strin
     plot.close();
 }
 
-int main(int argc, char* argv[]) {
+int main() {
     std::array<std::vector<double>, 3> data;
     double freq = 100;
     printf("freq = %.7e\n", freq);

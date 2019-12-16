@@ -3,8 +3,7 @@
 #include <iostream>
 #include <vector>
 
-int main(int argc, char *argv[])
-{
+int main() {
     ImuCsv acc_csv("acc");
     ImuCsv gyr_csv("gyr");
     acc_csv.load("acc.csv");

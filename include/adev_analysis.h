@@ -23,7 +23,7 @@ struct AdevNoiseModel {
     }
 
     bool consensus(const point_type &point) {
-        return abs(pow(10.0, m_noise - log10(point[0])*0.5) - point[1]) <= m_err;
+        return abs(pow(10.0, m_noise - log10(point[0]) * 0.5) - point[1]) <= m_err;
     }
 
     double m_err;
@@ -48,7 +48,7 @@ struct AdevRandomWalkModel {
     }
 
     bool consensus(const point_type &point) {
-        return abs(pow(10.0, m_noise + log10(point[0])*0.5) - point[1]) <= m_err;
+        return abs(pow(10.0, m_noise + log10(point[0]) * 0.5) - point[1]) <= m_err;
     }
 
     double m_err;

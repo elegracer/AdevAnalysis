@@ -3,29 +3,17 @@
 #include <memory>
 #include <vector>
 
-class Sensors {
+namespace libsensors {
+
+class Sensors::SensorsImpl {
+    Sensors* sensors;
+
   public:
-    static Sensors* sensors() {
-        static std::unique_ptr<Sensors> s_instance = std::make_unique<Sensors>();
-        return s_instance.get();
+    SensorsImpl(Sensors* sensors) :
+        sensors(sensors) {
     }
 
-    virtual ~Sensors() {
-        if (has_init) {
-            deinit();
-        }
-    }
-
-    void set_gyroscope_handler(gyroscope_handler h) {
-        m_gyroscope_handler = h;
-    }
-
-    void set_accelerometer_handler(accelerometer_handler h) {
-        m_accelerometer_handler = h;
-    }
-
-    void set_error_handler(error_handler h) {
-        m_error_handler = h;
+    ~SensorsImpl() {
     }
 
     void parse_data(const void* bytes, size_t size) {
@@ -40,15 +28,23 @@ class Sensors {
             if (!advance(timestamp, consumed)) goto end_parse;
 
             switch (type) {
+            case 0x00: // image
+            {
+                std::uint32_t width, height;
+                if (!advance(width, consumed)) goto end_parse;
+                if (!advance(height, consumed)) goto end_parse;
+                if (!try_advance_size(width * height, consumed)) goto end_parse;
+                std::vector<std::uint8_t> pixels;
+                advance_size(width * height, consumed, pixels);
+                sensors->on_image(timestamp, width, height, pixels.data());
+            } break;
             case 0x01: // gyroscope
             {
                 double x, y, z;
                 if (!advance(x, consumed)) goto end_parse;
                 if (!advance(y, consumed)) goto end_parse;
                 if (!advance(z, consumed)) goto end_parse;
-                if (m_gyroscope_handler) {
-                    (*m_gyroscope_handler)(timestamp, x, y, z);
-                }
+                sensors->on_gyroscope(timestamp, x, y, z);
             } break;
             case 0x02: // accelerometer
             {
@@ -56,12 +52,42 @@ class Sensors {
                 if (!advance(x, consumed)) goto end_parse;
                 if (!advance(y, consumed)) goto end_parse;
                 if (!advance(z, consumed)) goto end_parse;
-                if (m_accelerometer_handler) {
-                    (*m_accelerometer_handler)(timestamp, x, y, z);
-                }
+                sensors->on_accelerometer(timestamp, x, y, z);
+            } break;
+            case 0x03: // magnetometer
+            {
+                double x, y, z;
+                if (!advance(x, consumed)) goto end_parse;
+                if (!advance(y, consumed)) goto end_parse;
+                if (!advance(z, consumed)) goto end_parse;
+                sensors->on_magnetometer(timestamp, x, y, z);
+            } break;
+            case 0x04: // altimeter
+            {
+                double pressure, elevation;
+                if (!advance(pressure, consumed)) goto end_parse;
+                if (!advance(elevation, consumed)) goto end_parse;
+                sensors->on_altimeter(timestamp, pressure, elevation);
+            } break;
+            case 0x05: // gps
+            {
+                double lon, lat, alt, hacc, vacc;
+                if (!advance(lon, consumed)) goto end_parse;
+                if (!advance(lat, consumed)) goto end_parse;
+                if (!advance(alt, consumed)) goto end_parse;
+                if (!advance(hacc, consumed)) goto end_parse;
+                if (!advance(vacc, consumed)) goto end_parse;
+                sensors->on_gps(timestamp, lon, lat, alt, hacc, vacc);
+            } break;
+            case 0x12: { // gravity reported by device
+                double x, y, z;
+                if (!advance(x, consumed)) goto end_parse;
+                if (!advance(y, consumed)) goto end_parse;
+                if (!advance(z, consumed)) goto end_parse;
+                sensors->on_gravity(timestamp, x, y, z);
             } break;
             default: {
-                error("unknown data type.");
+                sensors->on_error("unknown data type.");
             } break;
             }
             if (consumed > 0) {
@@ -100,56 +126,23 @@ class Sensors {
             consumed += size;
             return true;
         } else {
-            error("fatal error: buffer overrun.");
+            sensors->on_error("fatal error: buffer overrun.");
             exit(EXIT_FAILURE);
             return false;
         }
     }
 
-    void error(const char* msg) const {
-        if (m_error_handler) {
-            (*m_error_handler)(msg);
-        }
-    }
-
-    gyroscope_handler m_gyroscope_handler = nullptr;
-    accelerometer_handler m_accelerometer_handler = nullptr;
-
-    error_handler m_error_handler = nullptr;
-
     std::vector<unsigned char> buffer;
-
-  public:
-    void init() {
-        has_init = true;
-    }
-    void deinit() {
-        has_init = false;
-    }
-  private:
-    bool has_init = false;
 };
 
-void sensors_gyroscope_handler_set(gyroscope_handler h) {
-    Sensors::sensors()->set_gyroscope_handler(h);
+Sensors::Sensors() {
+    pimpl = std::make_unique<SensorsImpl>(this);
 }
 
-void sensors_accelerometer_handler_set(accelerometer_handler h) {
-    Sensors::sensors()->set_accelerometer_handler(h);
+Sensors::~Sensors() = default;
+
+void Sensors::parse_data(const void* bytes, size_t size) {
+    pimpl->parse_data(bytes, size);
 }
 
-void sensors_error_handler_set(error_handler h) {
-    Sensors::sensors()->set_error_handler(h);
-}
-
-void sensors_init() {
-    Sensors::sensors()->init();
-}
-
-void sensors_deinit() {
-    Sensors::sensors()->deinit();
-}
-
-void sensors_parse_data(const void* bytes, long size) {
-    Sensors::sensors()->parse_data(bytes, size);
-}
+} // namespace libsensors

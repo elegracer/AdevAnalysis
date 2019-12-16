@@ -17,13 +17,11 @@ struct ImuCsv {
     std::vector<imu_data> items;
     std::string type;
 
-    void append(double t, double x, double y, double z)
-    {
+    void append(double t, double x, double y, double z) {
         items.emplace_back(imu_data {t, x, y, z});
     }
 
-    imu_data mean_value()
-    {
+    imu_data mean_value() {
         imu_data mean = {0.0, 0.0, 0.0, 0.0};
         for (auto &item : items) {
             for (size_t i = 1; i < item.size(); ++i) {
@@ -39,8 +37,7 @@ struct ImuCsv {
         return mean;
     }
 
-    void load(const std::string &filename)
-    {
+    void load(const std::string &filename) {
         items.clear();
         if (FILE *csv = fopen(filename.c_str(), "r")) {
             char header_line[2048];
@@ -53,8 +50,7 @@ struct ImuCsv {
         }
     }
 
-    void save(const std::string &filename) const
-    {
+    void save(const std::string &filename) const {
         if (FILE *csv = fopen(filename.c_str(), "w")) {
             if (type == "acc") {
                 fputs("#acc: t[s:double],x[m/s^2:double],y[m/s^2:double],z[m/s^2:double]\n", csv);
@@ -68,8 +64,7 @@ struct ImuCsv {
         }
     }
 
-    void save_column(const std::string &filename, size_t col) const
-    {
+    void save_column(const std::string &filename, size_t col) const {
         if (FILE *csv = fopen(filename.c_str(), "w")) {
             for (auto &item : items) {
                 fprintf(csv, "%.9e\n", item[col]);
